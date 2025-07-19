@@ -2,7 +2,7 @@
 import math
 from dataclasses import dataclass
 from itertools import product
-from typing import Iterator, List, Tuple
+from typing import Iterator, Tuple
 
 # --- Constants ---
 EARTH_RADIUS = 6378137

@@ -1,13 +1,15 @@
-import asyncio
 import os
 import re
+import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+import arrow
 import httpx
 import trio
 from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 
 from core.config import header
 from core.utils.xyz import GoogleXYZTile, Tile
@@ -24,10 +26,11 @@ class TileFile:
 
 class TileDownloader(object):
     output_format = "tile_{x}_{y}.{format}"
-    url_template = "https://cdn.rainviewer.com/v2/radar/1752904200/256/{z}/{x}/{y}/255/1_1_1_0.webp"
-    url_template = "https://rdr.windy.com/radar2/composite/2025/07/19/1325/{z}/{x}/{y}/reflectivity.png?multichannel=true&maxt=20250719132143"
+    url_template = None
 
     def __init__(self, top_left, right_bottom, zoom: int):
+        if self.url_template is None:
+            raise NotImplementedError("url_template is not set")
         suffix = Path(self.url_template).suffix
         self.format = re.match(".(png|webp|jpg)?", suffix).group(1)
         self.zoom = zoom
@@ -84,9 +87,9 @@ class TileDownloader(object):
         return self.url_template.format(z=self.zoom, x=x, y=y, **kwargs)
 
     def merge(self, filename):
-        merged_pic = self._merge_tiles()
+        merged_pic, metaInfo = self._merge_tiles()
         merged_pic = merged_pic.convert("RGBA")
-        merged_pic.save(filename)
+        merged_pic.save(filename, pnginfo=metaInfo)
 
     def _merge_tiles(self):
         print(self.len_x, self.len_y)
@@ -101,18 +104,63 @@ class TileDownloader(object):
 
         top_left = self.tile_xy.get_tile_lat_lng(self.start_x, self.start_y)
         bottom_right = self.tile_xy.get_tile_lat_lng(self.end_x + 1, self.end_y + 1)
-        print(top_left, bottom_right)
-        print(self.start_x, self.start_y, self.end_x, self.end_y)
-        return merged_pic
+        metaInfo = {
+            "lat_bounds": [top_left[0], bottom_right[0]],
+            "lng_bounds": [top_left[1], bottom_right[1]],
+            "zoom": self.zoom,
+            "projection": "EPSG:3857",
+        }
+        pnginfo = PngInfo()
+        for k, v in metaInfo.items():
+            pnginfo.add_text(k, json.dumps(v))
+        return merged_pic, pnginfo
+
+
+class RainViewerRadarV2TileDownloader(TileDownloader):
+    url_template = "https://cdn.rainviewer.com/v2/radar/{timestamp}/256/{z}/{x}/{y}/255/1_1_1_0.webp"
+    def __init__(self, timestamp: int, *args, **kwargs):
+        self.timestamp = timestamp
+        self.url_template = self.url_template.format(timestamp=timestamp, x="{x}", y="{y}", z="{z}")
+        print(self.url_template)
+        super().__init__(*args, **kwargs)
+
+
+class WindyRadarV2TileDownloader(TileDownloader):
+    url_template = "https://rdr.windy.com/radar2/composite/{date:YYYY/MM/DD}/{num}/{z}/{x}/{y}/reflectivity.png?multichannel=true&maxt={date:YYYYMMDDHHmmss}"
+    def __init__(self, date: arrow.Arrow, num: int, *args, **kwargs):
+        self.date = date
+        self.url_template = self.url_template.format(date=date, num=num, x="{x}", y="{y}", z="{z}")
+        print(self.url_template)
+        super().__init__(*args, **kwargs)
 
 
 if __name__ == "__main__":
-    tile = TileDownloader(
-        (41.87501349541372, 113.78232363984644),
-        (37.74276146796519, 119.16156979277075),
+    now = arrow.utcnow()
+    print(now)
+    timestamp = int(now.timestamp()) // 600 * 600
+    top_left = (41.87501349541372, 113.78232363984644)
+    bottom_right = (37.74276146796519, 119.16156979277075)
+    tile = RainViewerRadarV2TileDownloader(
+        timestamp,
+        top_left,
+        bottom_right,
         zoom=7,
     )
     with tempfile.TemporaryDirectory(dir="./test/") as tmp_dir:
         tile.download(tmp_dir)
         print(tmp_dir)
-        tile.merge("test/merged.png")
+        tile.merge("test/merged_rainviewer.png")
+    
+    floored_minute = (now.minute // 5) * 5
+    now = now.floor("minute").replace(minute=floored_minute)
+    tile = WindyRadarV2TileDownloader(
+        now,
+        1555,
+        top_left,
+        bottom_right,
+        zoom=7,
+    )
+    with tempfile.TemporaryDirectory(dir="./test/") as tmp_dir:
+        tile.download(tmp_dir)
+        print(tmp_dir)
+        tile.merge("test/merged_windy.png")

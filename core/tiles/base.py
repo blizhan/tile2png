@@ -3,7 +3,9 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
+import tempfile
 
+import arrow
 import httpx
 import trio
 from PIL import Image
@@ -14,6 +16,7 @@ from ..utils.xyz import GoogleXYZTile, Tile
 
 max_concurrency = 10
 
+__all__ = ["TileDownloader", "TileFile", "WindyTileDownloader"]
 
 @dataclass
 class TileFile:
@@ -26,7 +29,9 @@ class TileDownloader(object):
     output_format = "tile_{x}_{y}.{format}"
     url_template = None
 
-    def __init__(self, top_left, right_bottom, zoom: int):
+    def __init__(self, lat_bounds: list[float], lon_bounds: list[float], zoom: int):
+        top_left = (lat_bounds[1], lon_bounds[0])
+        right_bottom = (lat_bounds[0], lon_bounds[1])
         if self.url_template is None:
             raise NotImplementedError("url_template is not set")
         suffix = Path(self.url_template).suffix
@@ -84,21 +89,24 @@ class TileDownloader(object):
     def _get_url(self, x, y, **kwargs):
         return self.url_template.format(z=self.zoom, x=x, y=y, **kwargs)
 
-    def merge(self, filename):
+    def merge(self, filename) -> str:
         merged_pic, metaInfo = self._merge_tiles()
         merged_pic = merged_pic.convert("RGBA")
         merged_pic.save(filename, pnginfo=metaInfo)
+        return filename
+
+    def _process_single_tile(self, tile: TileFile) -> Image.Image:
+        return Image.open(tile.file)
 
     def _merge_tiles(self):
-        print(self.len_x, self.len_y)
         merged_pic = Image.new("RGBA", (self.len_x * 256, self.len_y * 256))
 
         for i, tile in enumerate(self.tiles):
             if tile.file is None or not tile.file.exists():
                 continue
-            with Image.open(tile.file) as tile_img:
-                y, x = tile.tile.y - self.start_y, tile.tile.x - self.start_x
-                merged_pic.paste(tile_img, (x * 256, y * 256))
+            tile_img = self._process_single_tile(tile)
+            y, x = tile.tile.y - self.start_y, tile.tile.x - self.start_x
+            merged_pic.paste(tile_img, (x * 256, y * 256))
 
         top_left = self.tile_xy.get_tile_lat_lng(self.start_x, self.start_y)
         bottom_right = self.tile_xy.get_tile_lat_lng(self.end_x + 1, self.end_y + 1)
@@ -112,6 +120,25 @@ class TileDownloader(object):
         for k, v in metaInfo.items():
             pnginfo.add_text(k, json.dumps(v))
         return merged_pic, pnginfo
+    
+    def to_png(self, output: str, tmp_dir: str = None) -> str | None:
+        if tmp_dir is None:
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                self.download(tmp_dir)
+                return self.merge(output)
+        else:
+            self.download(tmp_dir)
+            return self.merge(output)
 
 
+class WindyTileDownloader(TileDownloader):
+    url_template = None
+
+    def __init__(self, date: arrow.Arrow, *args, **kwargs):
+        self.date = date
+        self.url_template = self.url_template.format(
+            date=date, x="{x}", y="{y}", z="{z}"
+        )
+        print(self.url_template)
+        super().__init__(*args, **kwargs)
 

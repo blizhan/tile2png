@@ -1,10 +1,9 @@
-from PIL import Image
 import arrow
+from PIL import Image
 
 from core.tiles.base import TileFile
 
 from .base import WindyTileDownloader
-
 
 __all__ = ["WindySatelliteInfraTileDownloader", "WindySatelliteVisTileDownloader"]
 
@@ -20,7 +19,7 @@ class WindySatelliteInfraTileDownloader(WindySatelliteTileDownloader):
     def _process_single_tile(self, tile: TileFile) -> Image.Image:
         img = Image.open(tile.file)
         return img.crop((0, 256, 256, 512))
-    
+
 
 class WindySatelliteVisTileDownloader(WindySatelliteTileDownloader):
     def __init__(self, *args, **kwargs):

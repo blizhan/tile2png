@@ -1,9 +1,9 @@
 import json
 import os
 import re
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-import tempfile
 
 import arrow
 import httpx
@@ -17,6 +17,7 @@ from ..utils.xyz import GoogleXYZTile, Tile
 max_concurrency = 10
 
 __all__ = ["TileDownloader", "TileFile", "WindyTileDownloader"]
+
 
 @dataclass
 class TileFile:
@@ -120,7 +121,7 @@ class TileDownloader(object):
         for k, v in metaInfo.items():
             pnginfo.add_text(k, json.dumps(v))
         return merged_pic, pnginfo
-    
+
     def to_png(self, output: str, tmp_dir: str = None) -> str | None:
         if tmp_dir is None:
             with tempfile.TemporaryDirectory() as tmp_dir:
@@ -141,4 +142,3 @@ class WindyTileDownloader(TileDownloader):
         )
         print(self.url_template)
         super().__init__(*args, **kwargs)
-

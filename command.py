@@ -1,6 +1,6 @@
-from re import L
-import tempfile
 import functools
+import tempfile
+from re import L
 from typing import Optional
 
 import arrow
@@ -9,32 +9,48 @@ import click
 from core.tiles import *
 
 common_options = [
-    click.option("--lat_bounds", type=click.Tuple([float, float]), required=True, help="Latitude bounds (min, max)"),
-    click.option("--lon_bounds", type=click.Tuple([float, float]), required=True, help="Longitude bounds (min, max)"),
+    click.option(
+        "--lat_bounds",
+        type=click.Tuple([float, float]),
+        required=True,
+        help="Latitude bounds (min, max)",
+    ),
+    click.option(
+        "--lon_bounds",
+        type=click.Tuple([float, float]),
+        required=True,
+        help="Longitude bounds (min, max)",
+    ),
     click.option("--zoom", type=int, default=7, help="Map zoom level"),
     click.option("--output", type=str, default=None, help="Output file name"),
 ]
 
+
 def add_options(options):
-    """A decorator factory that adds a list of click options to a command.
-    """
+    """A decorator factory that adds a list of click options to a command."""
+
     def decorator(func):
         for option in reversed(options):
             func = option(func)
         return func
+
     return decorator
+
 
 @click.group()
 def cli():
     pass
 
+
 @cli.group()
 def radar():
     pass
 
+
 @cli.group()
 def sate():
     pass
+
 
 @sate.command()
 @add_options(common_options)
@@ -89,6 +105,7 @@ def windy(
         output = f"windy_radar_{now.format('YYYYMMDDHHmmss')}.png"
     tile.to_png(output)
 
+
 @radar.command()
 @add_options(common_options)
 def rainviewer(
@@ -109,6 +126,7 @@ def rainviewer(
     if output is None:
         output = f"rainviewer_radar_{now.format('YYYYMMDDHHmmss')}.png"
     tile.to_png(output)
+
 
 if __name__ == "__main__":
     cli()

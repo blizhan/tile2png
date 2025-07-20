@@ -25,11 +25,18 @@ uv run command.py sate windy --type infra --lat_bounds 37.742 41.875 --lon_bound
 ```
 ![](sample/windy_sate-vis_20250720023000.png)
 
+### Map
+
+Google Satellite Map
+```python
+uv run command.py map google --lat_bounds 39.6 39.65 --lon_bounds 113.6 113.7 --zoom 15 --output map.webp
+```
+![](sample/google_sate_map.webp)
+
+
 ## Todo
 
 - [ ] function
     - [ ] output projection
-    - [ ] reverse value
 - [ ] other map tiles support
     - [ ] windy
-    - [ ] google map

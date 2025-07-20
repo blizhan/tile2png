@@ -36,7 +36,10 @@ class TileDownloader(object):
         if self.url_template is None:
             raise NotImplementedError("url_template is not set")
         suffix = Path(self.url_template).suffix
-        self.format = re.match(".(png|webp|jpg)?", suffix).group(1)
+        try:
+            self.format = re.match(".(png|webp|jpg)?", suffix).group(1)
+        except AttributeError:
+            self.format = "png"
         self.zoom = zoom
         self.tile_xy = GoogleXYZTile(zoom=zoom)
         self.start_x, self.start_y, self.end_x, self.end_y = self.tile_xy.get_xy_range(

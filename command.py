@@ -52,6 +52,11 @@ def sate():
     pass
 
 
+@cli.group()
+def map():
+    pass
+
+
 @sate.command()
 @add_options(common_options)
 @click.option("--type", type=click.Choice(["infra", "vis"]), required=True)
@@ -125,6 +130,25 @@ def rainviewer(
     )
     if output is None:
         output = f"rainviewer_radar_{now.format('YYYYMMDDHHmmss')}.png"
+    tile.to_png(output)
+
+
+@map.command()
+@add_options(common_options)
+def google(
+    lat_bounds: tuple[float, float],
+    lon_bounds: tuple[float, float],
+    zoom: Optional[int] = 7,
+    output: Optional[str] = None,
+):
+    tile = GoogleSatelliteMapTileDownloader(
+        {},
+        lat_bounds,
+        lon_bounds,
+        zoom=zoom,
+    )
+    if output is None:
+        output = f"google_satellite_map.png"
     tile.to_png(output)
 
 

@@ -1,4 +1,3 @@
-import arrow
 import numpy as np
 from PIL import Image
 
@@ -14,8 +13,9 @@ class WindySatelliteTileDownloader(WindyTileDownloader):
 
     def _parse_value(self, merged_pic: Image.Image) -> Image.Image:
         data = np.array(merged_pic, dtype=np.uint8)[..., 0]
-        data = np.where(data>128, 255 - data, data)
+        data = np.where(data > 128, 255 - data, data)
         return Image.fromarray(data)
+
 
 class WindySatelliteInfraTileDownloader(WindySatelliteTileDownloader):
     def __init__(self, *args, **kwargs):

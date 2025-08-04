@@ -1,6 +1,3 @@
-import functools
-import tempfile
-from re import L
 from typing import Optional
 
 import arrow
@@ -12,13 +9,13 @@ common_options = [
     click.option(
         "--lat_bounds",
         type=click.Tuple([float, float]),
-        default=[0,0],
+        default=[0, 0],
         help="Latitude bounds (min, max)",
     ),
     click.option(
         "--lon_bounds",
         type=click.Tuple([float, float]),
-        default=[0,0],
+        default=[0, 0],
         help="Longitude bounds (min, max)",
     ),
     click.option(
@@ -27,7 +24,7 @@ common_options = [
         default=None,
         help="Center latitude and longitude",
     ),
-    click.option("--radius", type=int, default=1000*50, help="Radius in meters"),
+    click.option("--radius", type=int, default=1000 * 50, help="Radius in meters"),
     click.option("--zoom", type=int, default=7, help="Map zoom level"),
     click.option("--output", type=str, default=None, help="Output file name"),
 ]
@@ -179,7 +176,7 @@ def google(
         zoom=zoom,
     )
     if output is None:
-        output = f"google_satellite_map.png"
+        output = "google_satellite_map.png"
     tile.to_png(output)
 
 
@@ -197,6 +194,7 @@ def tile(
 ):
     class UDFTTileDownloader(TileDownloader):
         url_template = url_template
+
     tile = UDFTTileDownloader(
         lat_bounds=lat_bounds,
         lon_bounds=lon_bounds,
@@ -208,6 +206,7 @@ def tile(
     if output is None:
         output = f"download_map-zoom{zoom}.webp"
     tile.merge(output)
+
 
 if __name__ == "__main__":
     cli()

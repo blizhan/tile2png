@@ -4,13 +4,16 @@ from pyproj import Transformer
 w2m = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
 m2w = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
 
+
 def get_mymx(lat, lon):
     x, y = w2m.transform(lon, lat)
     return y, x
 
+
 def get_latlng(my, mx):
     lon, lat = m2w.transform(mx, my)
     return lat, lon
+
 
 def crop_image(
     img: Image.Image,

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import re
@@ -5,15 +6,14 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-import asyncio
 import arrow
 import httpx
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 
 from ..config import header
+from ..utils.proj import crop_image, get_latlng, get_mymx
 from ..utils.xyz import GoogleXYZTile, Tile
-from ..utils.proj import get_mymx, get_latlng, crop_image
 
 max_concurrency = 10
 
@@ -100,8 +100,6 @@ class TileDownloader(object):
         self.image = None
         self.timeout = 20
 
-
-
     def download(self, folder, **kwargs):
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
@@ -140,7 +138,9 @@ class TileDownloader(object):
         while attempt < self.max_retries:
             async with semaphore:
                 try:
-                    response = await client.get(t.url, headers=header, timeout=self.timeout)
+                    response = await client.get(
+                        t.url, headers=header, timeout=self.timeout
+                    )
                     response.raise_for_status()
                     with t.file.open("wb") as f:
                         f.write(response.content)
@@ -167,12 +167,14 @@ class TileDownloader(object):
 
     def _process_single_tile(self, tile: TileFile) -> Image.Image:
         return Image.open(tile.file)
-    
+
     def _parse_value(self, merged_pic: Image.Image) -> Image.Image:
         raise NotImplementedError("Not implemented")
 
     def _merge_tiles(self):
-        merged_pic = Image.new("RGBA", (self.len_x * self.tilesize, self.len_y * self.tilesize))
+        merged_pic = Image.new(
+            "RGBA", (self.len_x * self.tilesize, self.len_y * self.tilesize)
+        )
 
         for i, tile in enumerate(self.tiles):
             if tile.file is None or not tile.file.exists():
@@ -183,20 +185,24 @@ class TileDownloader(object):
 
         if self.parse:
             merged_pic = self._parse_value(merged_pic)
-        
+
         if self.crop:
-            merged_pic = self._crop(merged_pic, self.real_my_bounds, self.real_mx_bounds)
+            merged_pic = self._crop(
+                merged_pic, self.real_my_bounds, self.real_mx_bounds
+            )
 
         self.image = merged_pic
 
-        self.meta_info.update({
-            "lat_bounds": self.real_lat_bounds,
-            "lng_bounds": self.real_lng_bounds,
-            "zoom": self.zoom,
-            "projection": "EPSG:3857",
-            "my_bounds": self.real_my_bounds,
-            "mx_bounds": self.real_mx_bounds,
-        })
+        self.meta_info.update(
+            {
+                "lat_bounds": self.real_lat_bounds,
+                "lng_bounds": self.real_lng_bounds,
+                "zoom": self.zoom,
+                "projection": "EPSG:3857",
+                "my_bounds": self.real_my_bounds,
+                "mx_bounds": self.real_mx_bounds,
+            }
+        )
         pnginfo = PngInfo()
         for k, v in self.meta_info.items():
             pnginfo.add_text(k, json.dumps(v))

@@ -9,11 +9,11 @@ __all__ = ["WindySatelliteInfraTileDownloader", "WindySatelliteVisTileDownloader
 
 
 class WindySatelliteTileDownloader(WindyTileDownloader):
-    url_template = "https://sat.windy.com/satellite/tile/deg0emtg/{date:YYYYMMDDHHmm}/{z}/{x}/{y}/visir.jpg?mosaic=true"
+    url_template = "https://sat.windy.com/satellite{archive}/tile/deg9e/{date:YYYYMMDDHHmm}/{z}/{x}/{y}/visir.jpg?mosaic=true"
 
     def _parse_value(self, merged_pic: Image.Image) -> Image.Image:
         data = np.array(merged_pic, dtype=np.uint8)[..., 0]
-        data = np.where(data > 128, 255 - data, data)
+        data = np.where((data >= 128), 255 - data, data)
         return Image.fromarray(data)
 
 

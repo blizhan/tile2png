@@ -41,7 +41,7 @@ class RainViewerRadarV2TileDownloader(TileDownloader):
 
 
 class WindyRadarV2TileDownloader(WindyTileDownloader):
-    url_template = "https://rdr.windy.com/radar2/composite/{date:YYYY/MM/DD/HHmm}/{z}/{x}/{y}/reflectivity.png?multichannel=true&maxt={date:YYYYMMDDHHmmss}"
+    url_template = "https://rdr.windy.com/radar2{archive}/composite/{date:YYYY/MM/DD/HHmm}/{z}/{x}/{y}/reflectivity.png?multichannel=true"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

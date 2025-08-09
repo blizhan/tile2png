@@ -24,6 +24,8 @@ common_options = [
         default=None,
         help="Center latitude and longitude",
     ),
+    click.option("--date", type=str, default=None, help="Date"),
+    click.option("--archive", type=bool, default=True, help="Use archive"),
     click.option("--radius", type=int, default=1000 * 50, help="Radius in meters"),
     click.option("--zoom", type=int, default=7, help="Map zoom level"),
     click.option("--output", type=str, default=None, help="Output file name"),
@@ -73,17 +75,23 @@ def windy(
     type: str,
     lat_bounds: tuple[float, float],
     lon_bounds: tuple[float, float],
+    date: Optional[str] = None,
+    archive: bool = True,
     center_latlng: Optional[tuple[float, float]] = None,
     radius: Optional[int] = 0,
     zoom: Optional[int] = 7,
     output: Optional[str] = None,
 ):
-    now = arrow.utcnow().shift(minutes=-15)
+    if date is None:
+        now = arrow.utcnow().shift(minutes=-15)
+    else:
+        now = arrow.get(date)
     floored_minute = (now.minute // 10) * 10
     now = now.floor("minute").replace(minute=floored_minute)
     if type == "infra":
         tile = WindySatelliteInfraTileDownloader(
             now,
+            archive=archive,
             lat_bounds=lat_bounds,
             lon_bounds=lon_bounds,
             center_latlng=center_latlng,
@@ -93,6 +101,7 @@ def windy(
     elif type == "vis":
         tile = WindySatelliteVisTileDownloader(
             now,
+            archive=archive,
             lat_bounds=lat_bounds,
             lon_bounds=lon_bounds,
             center_latlng=center_latlng,
@@ -109,17 +118,22 @@ def windy(
 def windy(
     lat_bounds: tuple[float, float],
     lon_bounds: tuple[float, float],
+    date: Optional[str] = None,
+    archive: bool = True,
     center_latlng: Optional[tuple[float, float]] = None,
     radius: Optional[int] = 0,
     zoom: Optional[int] = 7,
     output: Optional[str] = None,
 ):
-    now = arrow.utcnow().shift(minutes=-5)
+    if date is None:
+        now = arrow.utcnow().shift(minutes=-5)
+    else:
+        now = arrow.get(date)
     floored_minute = (now.minute // 5) * 5
     now = now.floor("minute").replace(minute=floored_minute)
-    # now = arrow.get("2025-08-03T05:20:00Z")
     tile = WindyRadarV2TileDownloader(
         now,
+        archive=archive,
         lat_bounds=lat_bounds,
         lon_bounds=lon_bounds,
         center_latlng=center_latlng,

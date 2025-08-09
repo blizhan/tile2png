@@ -233,10 +233,10 @@ class TileDownloader(object):
 class WindyTileDownloader(TileDownloader):
     url_template = None
 
-    def __init__(self, date: arrow.Arrow, *args, **kwargs):
+    def __init__(self, date: arrow.Arrow, archive: bool, *args, **kwargs):
         self.date = date
         self.url_template = self.url_template.format(
-            date=date, x="{x}", y="{y}", z="{z}"
+            date=date, x="{x}", y="{y}", z="{z}", archive="/archive" if archive else ""
         )
         print(self.url_template)
         super().__init__(*args, **kwargs)

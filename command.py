@@ -25,7 +25,7 @@ common_options = [
         help="Center latitude and longitude",
     ),
     click.option("--date", type=str, default=None, help="Date"),
-    click.option("--archive", type=bool, default=True, help="Use archive"),
+    click.option("--archive", type=bool, default=False, help="Use archive"),
     click.option("--radius", type=int, default=1000 * 50, help="Radius in meters"),
     click.option("--zoom", type=int, default=7, help="Map zoom level"),
     click.option("--output", type=str, default=None, help="Output file name"),
@@ -112,6 +112,42 @@ def windy(
         output = f"windy_sate-{type}_{now.format('YYYYMMDDHHmmss')}.png"
     tile.to_png(output)
 
+
+@sate.command()
+@add_options(common_options)
+@click.option("--type", type=click.Choice(["infra", "vis"]), required=True)
+def rainviewer(
+    type: str,
+    lat_bounds: tuple[float, float],
+    lon_bounds: tuple[float, float],
+    date: Optional[str] = None,
+    archive: bool = True,
+    center_latlng: Optional[tuple[float, float]] = None,
+    radius: Optional[int] = 0,
+    zoom: Optional[int] = 7,
+    output: Optional[str] = None,
+):
+    if date is None:
+        now = arrow.utcnow().shift(minutes=-15)
+    else:
+        now = arrow.get(date)
+    floored_minute = (now.minute // 10) * 10
+    now = now.floor("minute").replace(minute=floored_minute)
+    if type == "infra":
+        tile = RainviewSatelliteInfraTileDownloader(
+            now,
+            archive=archive,
+            lat_bounds=lat_bounds,
+            lon_bounds=lon_bounds,
+            center_latlng=center_latlng,
+            radius=radius,
+            zoom=zoom,
+        )
+    else:
+        raise ValueError(f"Invalid type: {type}")
+    if output is None:
+        output = f"rainview_sate-{type}_{now.format('YYYYMMDDHHmmss')}.png"
+    tile.to_png(output)
 
 @radar.command()
 @add_options(common_options)

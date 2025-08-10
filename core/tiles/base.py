@@ -41,6 +41,7 @@ class TileDownloader(object):
         radius: int = 0,
         parse: bool = True,
         crop: bool = True,
+        **kwargs
     ):
         if center_latlng:
             center_lat, center_lon = center_latlng

@@ -149,6 +149,7 @@ def rainviewer(
         output = f"rainviewer_sate-{type}_{now.format('YYYYMMDDHHmmss')}.png"
     tile.to_png(output)
 
+
 @radar.command()
 @add_options(common_options)
 def windy(

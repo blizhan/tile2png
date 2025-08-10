@@ -40,7 +40,7 @@ class TileDownloader(object):
         center_latlng: tuple[float, float] = None,
         radius: int = 0,
         parse: bool = True,
-        crop: bool = True,
+        crop: bool = False,
         **kwargs
     ):
         if center_latlng:

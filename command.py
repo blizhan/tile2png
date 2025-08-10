@@ -146,7 +146,7 @@ def rainviewer(
     else:
         raise ValueError(f"Invalid type: {type}")
     if output is None:
-        output = f"rainview_sate-{type}_{now.format('YYYYMMDDHHmmss')}.png"
+        output = f"rainviewer_sate-{type}_{now.format('YYYYMMDDHHmmss')}.png"
     tile.to_png(output)
 
 @radar.command()
